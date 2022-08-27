@@ -38,10 +38,10 @@ namespace Mill_Record_Cutter
                     //Read the contents of the file into a stream
                     fileInStream = openInFileDialog.OpenFile();
                     len = (Int32)fileInStream.Length;
+                    inFilename.Text = openInFileDialog.FileName;
                 }
             }
-            MessageBox.Show(Convert.ToString(len), "File Size", MessageBoxButtons.OK);
-        }
+         }
 
         private void gen_Click(object sender, EventArgs e)
         {
@@ -53,11 +53,11 @@ namespace Mill_Record_Cutter
             fileName = openOutFile();
             if (fileName == "")
                 MessageBox.Show("Could not open file.", "Error", MessageBoxButtons.OK);
-            MessageBox.Show(fileName, "Output File", MessageBoxButtons.OK);
             var sr = new System.IO.StreamWriter(fileName,false,System.Text.Encoding.ASCII);
             sr.WriteLine("%");
             sr.WriteLine("(G20 inch units, G40 remove cutter dia comp, G54 use work coord 1 )");
             sr.WriteLine("G20 G40 G54");
+            // add some extra samples to make sure loop overlaps
             samples = Convert.ToInt32((60.0 / rpm) * Convert.ToDouble(sample_rate.Text) * 1.01);
             for (Int32 i = 0; i < samples; ++i)
             {
@@ -76,20 +76,19 @@ namespace Mill_Record_Cutter
                 r = Convert.ToDouble(Dia.Text) / 2.0 + data;
                 y = Math.Sin(theta) * r;
                 x = Math.Cos(theta) * r;
-                if (i == 0)  // rapid move to start thne slow plunge to cutting depth
+                if (i == 0)  // do inital rapid move to start position at safe height then plunge to cutting depth
                 {
-                    gcode = String.Format("G00 F20 X{0:F6} Y{1:F6} Z0.1", x, y);
+                    gcode = String.Format("G00 F20 X{0:F6} Y{1:F6} Z{2:F3}", x, y, Convert.ToDouble(safeHeight.Text));
                     sr.WriteLine(gcode);
-                    gcode = String.Format("G01 F5 Z-0.01");
+                    gcode = String.Format("G00 F20 Z0.1");
+                    sr.WriteLine(gcode);
+                    gcode = String.Format("G01 F{0:F1} Z{1:F4}", Convert.ToDouble(feedRate.Text), -Convert.ToDouble(depth.Text));
                     sr.WriteLine(gcode);
                 }
-                else
-                {
-                    gcode = String.Format("G01 F5 X{0:F6} Y{1:F6}", x, y);
-                    sr.WriteLine(gcode);
-                }
-             }
-            sr.WriteLine("G00 Z0.25");  // write end of program
+             gcode = String.Format("G01 X{0:F6} Y{1:F6}", x, y);
+             sr.WriteLine(gcode);
+            }
+            sr.WriteLine("G00 Z{0:F0}", Convert.ToDouble(safeHeight.Text));  // write end of program
             sr.WriteLine("M02");
             sr.WriteLine("%");
             MessageBox.Show("Write Complete", "File Write", MessageBoxButtons.OK);
@@ -123,6 +122,26 @@ namespace Mill_Record_Cutter
 
             
              
+        }
+
+        private void label5_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label6_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void inFilename_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
 
         private void speed_SelectedIndexChanged(object sender, EventArgs e)
